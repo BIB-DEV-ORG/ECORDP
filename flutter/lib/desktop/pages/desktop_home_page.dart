@@ -24,6 +24,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:window_size/window_size.dart' as window_size;
 import '../widgets/button.dart';
+import '../widgets/ecordp_style.dart';
 
 class DesktopHomePage extends StatefulWidget {
   const DesktopHomePage({Key? key}) : super(key: key);
@@ -59,6 +60,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   Widget build(BuildContext context) {
     super.build(context);
     final isIncomingOnly = bind.isIncomingOnly();
+    if (!isIncomingOnly) return _buildBlock(child: _buildEcoLayout(context));
     return _buildBlock(
         child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,6 +72,32 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     ));
   }
 
+  Widget _buildEcoLayout(BuildContext context) {
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          EcoEntrance(child: buildLeftPane(context)),
+          const SizedBox(width: 16),
+          Expanded(child: buildRightPane(context)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEcoBrand(BuildContext context) {
+    return Row(
+      children: [
+        ClipRRect(
+            borderRadius: BorderRadius.circular(14), child: loadIcon(42)),
+        const SizedBox(width: 12),
+        Text(bind.mainGetAppNameSync(), style: ecoTitle(context, size: 26)),
+      ],
+    ).marginOnly(left: 22, right: 16, top: 22, bottom: 4);
+  }
+
   Widget _buildBlock({required Widget child}) {
     return buildRemoteBlock(
         block: _block, mask: true, use: canBeBlocked, child: child);
@@ -79,6 +107,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     final isIncomingOnly = bind.isIncomingOnly();
     final isOutgoingOnly = bind.isOutgoingOnly();
     final children = <Widget>[
+      if (!isIncomingOnly) _buildEcoBrand(context),
       if (!isOutgoingOnly) buildPresetPasswordWarning(),
       if (bind.isCustomClient())
         Align(
@@ -129,8 +158,10 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     return ChangeNotifierProvider.value(
       value: gFFI.serverModel,
       child: Container(
-        width: isIncomingOnly ? 280.0 : 200.0,
-        color: Theme.of(context).colorScheme.background,
+        width: isIncomingOnly ? 280.0 : 300.0,
+        color: isIncomingOnly ? Theme.of(context).colorScheme.background : null,
+        decoration: isIncomingOnly ? null : ecoCardDecoration(context),
+        clipBehavior: isIncomingOnly ? Clip.none : Clip.antiAlias,
         child: Stack(
           children: [
             Column(
@@ -179,24 +210,22 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   }
 
   buildRightPane(BuildContext context) {
-    return Container(
-      color: Theme.of(context).scaffoldBackgroundColor,
-      child: ConnectionPage(),
-    );
+    return ConnectionPage();
   }
 
   buildIDBoard(BuildContext context) {
     final model = gFFI.serverModel;
     return Container(
-      margin: const EdgeInsets.only(left: 20, right: 11),
-      height: 57,
+      margin: const EdgeInsets.only(left: 20, right: 11, top: 8),
+      height: 64,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.baseline,
         textBaseline: TextBaseline.alphabetic,
         children: [
           Container(
-            width: 2,
-            decoration: const BoxDecoration(color: MyTheme.accent),
+            width: 3,
+            decoration: BoxDecoration(
+                color: MyTheme.accent, borderRadius: BorderRadius.circular(2)),
           ).marginOnly(top: 5),
           Expanded(
             child: Padding(
@@ -220,7 +249,11 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                                   ?.color
                                   ?.withOpacity(0.5)),
                         ).marginOnly(top: 5),
-                        buildPopupMenu(context)
+                        Row(mainAxisSize: MainAxisSize.min, children: [
+                          _buildCopyIdButton(context, model),
+                          const SizedBox(width: 4),
+                          buildPopupMenu(context),
+                        ])
                       ],
                     ),
                   ),
@@ -239,9 +272,9 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                           contentPadding: EdgeInsets.only(top: 10, bottom: 10),
                         ),
                         style: TextStyle(
-                          fontSize: 26,
-                          fontFamily: 'Olivier',
-                          letterSpacing: 1.5,
+                          fontSize: 27,
+                          fontFamily: kEcoMono,
+                          letterSpacing: 0.5,
                         ),
                       ).workaroundFreezeLinuxMint(),
                     ),
@@ -251,6 +284,30 @@ class _DesktopHomePageState extends State<DesktopHomePage>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCopyIdButton(BuildContext context, ServerModel model) {
+    return Tooltip(
+      message: translate('Copy'),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(15),
+        onTap: () {
+          Clipboard.setData(ClipboardData(text: model.serverId.text));
+          showToast(translate("Copied"));
+        },
+        child: CircleAvatar(
+          radius: 15,
+          backgroundColor: Theme.of(context).colorScheme.background,
+          child: Icon(Icons.copy_rounded,
+              size: 16,
+              color: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.color
+                  ?.withOpacity(0.6)),
+        ),
       ),
     );
   }
@@ -303,9 +360,10 @@ class _DesktopHomePageState extends State<DesktopHomePage>
         textBaseline: TextBaseline.alphabetic,
         children: [
           Container(
-            width: 2,
+            width: 3,
             height: 52,
-            decoration: BoxDecoration(color: MyTheme.accent),
+            decoration: BoxDecoration(
+                color: MyTheme.accent, borderRadius: BorderRadius.circular(2)),
           ),
           Expanded(
             child: Padding(
@@ -338,7 +396,10 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                               contentPadding:
                                   EdgeInsets.only(top: 14, bottom: 10),
                             ),
-                            style: TextStyle(fontSize: 15),
+                            style: TextStyle(
+                                fontSize: 19,
+                                fontFamily: kEcoMono,
+                                letterSpacing: 2),
                           ).workaroundFreezeLinuxMint(),
                         ),
                       ),

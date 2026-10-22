@@ -248,17 +248,22 @@ class ColorThemeExtension extends ThemeExtension<ColorThemeExtension> {
 class MyTheme {
   MyTheme._();
 
-  static const Color grayBg = Color(0xFFEFEFF2);
-  static const Color accent = Color(0xFF0071FF);
-  static const Color accent50 = Color(0x770071FF);
-  static const Color accent80 = Color(0xAA0071FF);
-  static const Color canvasColor = Color(0xFF212121);
-  static const Color border = Color(0xFFCCCCCC);
-  static const Color idColor = Color(0xFF00B6F0);
+  // EcoRDP : palette EcoHub (crème, corail, encre)
+  static const Color grayBg = Color(0xFFFFF4EA);
+  static const Color accent = Color(0xFFFB7D59);
+  static const Color accent50 = Color(0x77FB7D59);
+  static const Color accent80 = Color(0xAAE15A36);
+  static const Color canvasColor = Color(0xFF1B1512);
+  static const Color border = Color(0xFFF0E2D6);
+  static const Color idColor = Color(0xFFE15A36);
+  static const Color ink = Color(0xFF1C1410);
+  static const Color cream = Color(0xFFFFFDFA);
+  static const Color dusk = Color(0xFF1B1512);
+  static const Color duskCard = Color(0xFF2A211C);
   static const Color darkGray = Color.fromARGB(255, 148, 148, 148);
   static const Color cmIdColor = Color(0xFF21790B);
   static const Color dark = Colors.black87;
-  static const Color button = Color(0xFF2C8CFF);
+  static const Color button = Color(0xFFFB7D59);
   static const Color hoverBorder = Color(0xFF999999);
 
   // ListTile
@@ -373,9 +378,9 @@ class MyTheme {
     // https://stackoverflow.com/questions/77537315/after-upgrading-to-flutter-3-16-the-app-bar-background-color-button-size-and
     useMaterial3: false,
     brightness: Brightness.light,
-    hoverColor: Color.fromARGB(255, 224, 224, 224),
-    scaffoldBackgroundColor: Colors.white,
-    dialogBackgroundColor: Colors.white,
+    hoverColor: Color(0xFFFFEFDA),
+    scaffoldBackgroundColor: cream,
+    dialogBackgroundColor: cream,
     appBarTheme: AppBarTheme(
       shadowColor: Colors.transparent,
     ),
@@ -401,11 +406,10 @@ class MyTheme {
           )
         : null,
     textTheme: const TextTheme(
-        titleLarge: TextStyle(fontSize: 19, color: Colors.black87),
-        titleSmall: TextStyle(fontSize: 14, color: Colors.black87),
-        bodySmall: TextStyle(fontSize: 12, color: Colors.black87, height: 1.25),
-        bodyMedium:
-            TextStyle(fontSize: 14, color: Colors.black87, height: 1.25),
+        titleLarge: TextStyle(fontSize: 22, color: ink, fontFamily: 'Olivier'),
+        titleSmall: TextStyle(fontSize: 14, color: ink),
+        bodySmall: TextStyle(fontSize: 12, color: ink, height: 1.25),
+        bodyMedium: TextStyle(fontSize: 14, color: ink, height: 1.25),
         labelLarge: TextStyle(fontSize: 16.0, color: MyTheme.accent80)),
     cardColor: grayBg,
     hintColor: Color(0xFFAAAAAA),
@@ -430,18 +434,17 @@ class MyTheme {
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: MyTheme.accent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8.0),
-        ),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        shape: StadiumBorder(),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         backgroundColor: grayBg,
-        foregroundColor: Colors.black87,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8.0),
-        ),
+        foregroundColor: ink,
+        side: BorderSide(color: border),
+        shape: StadiumBorder(),
       ),
     ),
     switchTheme: switchTheme(),
@@ -450,11 +453,11 @@ class MyTheme {
     listTileTheme: listTileTheme,
     menuBarTheme: MenuBarThemeData(
         style:
-            MenuStyle(backgroundColor: MaterialStatePropertyAll(Colors.white))),
+            MenuStyle(backgroundColor: MaterialStatePropertyAll(cream))),
     colorScheme: ColorScheme.light(
-        primary: Colors.blue, secondary: accent, background: grayBg),
+        primary: accent, secondary: accent, background: grayBg),
     popupMenuTheme: PopupMenuThemeData(
-        color: Colors.white,
+        color: cream,
         shape: RoundedRectangleBorder(
           side: BorderSide(
               color: (isDesktop || isWebDesktop)
@@ -472,8 +475,8 @@ class MyTheme {
     useMaterial3: false,
     brightness: Brightness.dark,
     hoverColor: Color.fromARGB(255, 45, 46, 53),
-    scaffoldBackgroundColor: Color(0xFF18191E),
-    dialogBackgroundColor: Color(0xFF18191E),
+    scaffoldBackgroundColor: dusk,
+    dialogBackgroundColor: dusk,
     appBarTheme: AppBarTheme(
       shadowColor: Colors.transparent,
     ),
@@ -483,14 +486,14 @@ class MyTheme {
         borderRadius: BorderRadius.circular(18.0),
         side: BorderSide(
           width: 1,
-          color: Color(0xFF24252B),
+          color: duskCard,
         ),
       ),
     ),
     scrollbarTheme: scrollbarThemeDark,
     inputDecorationTheme: (isDesktop || isWebDesktop)
         ? InputDecorationTheme(
-            fillColor: Color(0xFF24252B),
+            fillColor: duskCard,
             filled: true,
             isDense: true,
             border: OutlineInputBorder(
@@ -499,7 +502,7 @@ class MyTheme {
           )
         : null,
     textTheme: const TextTheme(
-      titleLarge: TextStyle(fontSize: 19),
+      titleLarge: TextStyle(fontSize: 22, fontFamily: 'Olivier'),
       titleSmall: TextStyle(fontSize: 14),
       bodySmall: TextStyle(fontSize: 12, height: 1.25),
       bodyMedium: TextStyle(fontSize: 14, height: 1.25),
@@ -509,7 +512,7 @@ class MyTheme {
         color: accent80,
       ),
     ),
-    cardColor: Color(0xFF24252B),
+    cardColor: duskCard,
     visualDensity: VisualDensity.adaptivePlatformDensity,
     tabBarTheme: const TabBarTheme(
       labelColor: Colors.white70,
@@ -543,7 +546,7 @@ class MyTheme {
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        backgroundColor: Color(0xFF24252B),
+        backgroundColor: duskCard,
         side: BorderSide(color: Colors.white12, width: 0.5),
         disabledForegroundColor: Colors.white70,
         foregroundColor: Colors.white70,
@@ -560,9 +563,9 @@ class MyTheme {
         style: MenuStyle(
             backgroundColor: MaterialStatePropertyAll(Color(0xFF121212)))),
     colorScheme: ColorScheme.dark(
-      primary: Colors.blue,
+      primary: accent,
       secondary: accent,
-      background: Color(0xFF24252B),
+      background: duskCard,
     ),
     popupMenuTheme: PopupMenuThemeData(
         shape: RoundedRectangleBorder(

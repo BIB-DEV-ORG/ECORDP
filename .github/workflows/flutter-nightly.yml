@@ -2,11 +2,24 @@ name: EcoRDP build
 
 on:
   workflow_dispatch:
+    inputs:
+      android:
+        description: "Compiler aussi Android"
+        type: boolean
+        default: false
+      linux:
+        description: "Compiler aussi Linux"
+        type: boolean
+        default: false
 
 jobs:
   run-flutter-nightly-build:
+    permissions:
+      contents: write
     uses: ./.github/workflows/flutter-build.yml
     secrets: inherit
     with:
       upload-artifact: true
       upload-tag: "nightly"
+      build-android: ${{ inputs.android }}
+      build-linux: ${{ inputs.linux }}

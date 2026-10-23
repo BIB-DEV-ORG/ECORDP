@@ -17,6 +17,7 @@ import '../../common/widgets/peer_tab_page.dart';
 import '../../common/widgets/autocomplete.dart';
 import '../../models/platform_model.dart';
 import '../../desktop/widgets/ecordp_style.dart';
+import '../../desktop/widgets/ecordp_liquid.dart';
 
 class OnlineStatusWidget extends StatefulWidget {
   const OnlineStatusWidget({Key? key, this.onSvcStatusChanged})
@@ -308,9 +309,7 @@ class _ConnectionPageState extends State<ConnectionPage>
         Expanded(
           child: EcoEntrance(
             delay: 160,
-            child: Container(
-              decoration: ecoCardDecoration(context,
-                  color: Theme.of(context).colorScheme.background),
+            child: EcoGlassCard(
               padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
               child: PeerTabPage(),
             ),
@@ -339,26 +338,31 @@ class _ConnectionPageState extends State<ConnectionPage>
   /// UI for the remote ID TextField.
   /// Search for a peer.
   Widget _buildRemoteIDTextField(BuildContext context) {
-    var w = Container(
-      padding: const EdgeInsets.fromLTRB(28, 24, 28, 22),
-      decoration: BoxDecoration(
-          color: kEcoInk, borderRadius: BorderRadius.circular(28)),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(clipBehavior: Clip.none, children: [
-        const Positioned(right: -150, top: -170, child: EcoGlow()),
-        const Positioned(
-            left: 260,
-            bottom: -230,
-            child: EcoGlow(
-                size: 280,
-                color: Color(0xFFF6D56A),
-                period: Duration(seconds: 12))),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    final l = EcoLiquid.of(context);
+    var w = EcoGlassCard(
+      padding: const EdgeInsets.fromLTRB(22, 16, 18, 20),
+      child: LayoutBuilder(builder: (context, box) {
+        final narrow = box.maxWidth < 420;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(translate('Control Remote Desktop'),
-                    style: ecoTitle(context, size: 28, color: kEcoCream))
-                .marginOnly(bottom: 18),
+            Row(children: [
+              Expanded(
+                child: Text(translate('Control Remote Desktop').toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: ecoEyebrow(context)),
+              ),
+              Builder(
+                builder: (ctx) => EcoRoundButton(
+                  tooltip: translate('Dark Theme'),
+                  onPressed: () => EcoThemeReveal.toggle(ctx),
+                  child: Icon(l.dark
+                      ? Icons.light_mode_rounded
+                      : Icons.dark_mode_rounded),
+                ),
+              ),
+            ]).marginOnly(bottom: 10),
             Row(
               children: [
                 Expanded(
@@ -425,36 +429,36 @@ class _ConnectionPageState extends State<ConnectionPage>
                           enableSuggestions: false,
                           keyboardType: TextInputType.visiblePassword,
                           focusNode: fieldFocusNode,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: kEcoMono,
-                            fontSize: 22,
+                            fontSize: 19,
                             height: 1.4,
-                            color: kEcoCream,
+                            color: l.text,
                           ),
                           maxLines: 1,
                           cursorColor: kEcoCoral,
                           decoration: InputDecoration(
                               filled: true,
-                              fillColor: kEcoCream.withOpacity(0.06),
+                              fillColor: l.fill,
+                              prefixIcon: Icon(Icons.search_rounded,
+                                  size: 20, color: l.sub),
                               counterText: '',
                               hintText: _idInputFocused.value
                                   ? null
                                   : translate('Enter Remote ID'),
                               hintStyle: TextStyle(
-                                  fontFamily: 'SpaceGrotesk',
-                                  fontSize: 18,
-                                  color: kEcoCream.withOpacity(0.38)),
+                                  fontFamily: kEcoInter,
+                                  fontSize: 16,
+                                  color: l.sub),
                               enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(18),
-                                  borderSide: BorderSide(
-                                      color: kEcoCream.withOpacity(0.14),
-                                      width: 1.5)),
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide.none),
                               focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(18),
+                                  borderRadius: BorderRadius.circular(16),
                                   borderSide: const BorderSide(
                                       color: kEcoCoral, width: 1.5)),
                               contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 16)),
+                                  horizontal: 16, vertical: 15)),
                           controller: fieldTextEditingController,
                           inputFormatters: [IDTextInputFormatter()],
                           onChanged: (v) {
@@ -533,44 +537,49 @@ class _ConnectionPageState extends State<ConnectionPage>
                     );
                   },
                 )),
-                const SizedBox(width: 12),
-                EcoPill(
-                  label: translate('Connect'),
-                  icon: Icons.arrow_forward_rounded,
-                  primary: true,
-                  height: 56,
-                  onPressed: () => onConnect(),
-                ),
+                if (!narrow) const SizedBox(width: 12),
+                if (!narrow)
+                  EcoGradientButton(
+                    label: translate('Connect'),
+                    icon: Icons.arrow_forward_rounded,
+                    onPressed: _connectSelectedMode,
+                  ),
               ],
             ),
+            if (narrow) const SizedBox(height: 12),
+            if (narrow)
+              EcoGradientButton(
+                label: translate('Connect'),
+                onPressed: _connectSelectedMode,
+              ),
             const SizedBox(height: 14),
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              EcoPill(
-                  label: translate('Transfer file'),
-                  onDark: true,
-                  height: 34,
-                  onPressed: () => onConnect(isFileTransfer: true)),
-              EcoPill(
-                  label: translate('Terminal'),
-                  onDark: true,
-                  height: 34,
-                  onPressed: () => onConnect(isTerminal: true)),
-              if (isDesktop)
-                EcoPill(
-                    label: translate('TCP tunneling'),
-                    onDark: true,
-                    height: 34,
-                    onPressed: () => onConnect(isTcpTunneling: true)),
-              EcoPill(
-                  label: translate('View camera'),
-                  onDark: true,
-                  height: 34,
-                  onPressed: () => onConnect(isViewCamera: true)),
-            ]),
+            EcoSegmented(
+              labels: _ecoModes,
+              index: _ecoMode,
+              onChanged: (i) => setState(() => _ecoMode = i),
+            ),
           ],
-        ),
-      ]),
+        );
+      }),
     );
     return w;
+  }
+
+  static const _ecoModes = ['Bureau', 'Fichiers', 'Terminal', 'Tunnel', 'Caméra'];
+  int _ecoMode = 0;
+
+  void _connectSelectedMode() {
+    switch (_ecoMode) {
+      case 1:
+        onConnect(isFileTransfer: true);
+      case 2:
+        onConnect(isTerminal: true);
+      case 3:
+        onConnect(isTcpTunneling: true);
+      case 4:
+        onConnect(isViewCamera: true);
+      default:
+        onConnect();
+    }
   }
 }

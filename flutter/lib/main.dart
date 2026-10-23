@@ -29,6 +29,7 @@ import 'mobile/pages/home_page.dart';
 import 'mobile/pages/server_page.dart';
 import 'mobile/widgets/deploy_dialog.dart';
 import 'models/platform_model.dart';
+import 'desktop/widgets/ecordp_liquid.dart';
 
 /// Basic window and launch properties.
 int? kWindowId;
@@ -531,6 +532,10 @@ class _AppState extends State<App> with WidgetsBindingObserver {
                   if ((isDesktop && desktopType == DesktopType.main) ||
                       isWebDesktop) {
                     child = keyListenerBuilder(context, child);
+                  }
+                  if (isDesktop && desktopType == DesktopType.main) {
+                    child = EcoThemeReveal(
+                        key: EcoThemeReveal.globalKey, child: child);
                   }
                   if (isLinux) {
                     return buildVirtualWindowFrame(context, child);

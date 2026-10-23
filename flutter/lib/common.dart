@@ -377,7 +377,7 @@ class MyTheme {
   static ThemeData lightTheme = ThemeData(
     // https://stackoverflow.com/questions/77537315/after-upgrading-to-flutter-3-16-the-app-bar-background-color-button-size-and
     useMaterial3: false,
-    fontFamily: 'SpaceGrotesk',
+    fontFamily: 'Inter',
     brightness: Brightness.light,
     hoverColor: Color(0xFFFFEFDA),
     scaffoldBackgroundColor: cream,
@@ -474,7 +474,7 @@ class MyTheme {
   );
   static ThemeData darkTheme = ThemeData(
     useMaterial3: false,
-    fontFamily: 'SpaceGrotesk',
+    fontFamily: 'Inter',
     brightness: Brightness.dark,
     hoverColor: Color.fromARGB(255, 45, 46, 53),
     scaffoldBackgroundColor: dusk,

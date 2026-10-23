@@ -25,6 +25,7 @@ import 'package:window_manager/window_manager.dart';
 import 'package:window_size/window_size.dart' as window_size;
 import '../widgets/button.dart';
 import '../widgets/ecordp_style.dart';
+import '../widgets/ecordp_liquid.dart';
 
 class DesktopHomePage extends StatefulWidget {
   const DesktopHomePage({Key? key}) : super(key: key);
@@ -73,18 +74,57 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   }
 
   Widget _buildEcoLayout(BuildContext context) {
-    return Container(
-      color: Theme.of(context).scaffoldBackgroundColor,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          EcoEntrance(child: buildLeftPane(context)),
-          const SizedBox(width: 16),
-          Expanded(child: buildRightPane(context)),
-        ],
-      ),
+    return Stack(
+      children: [
+        const Positioned.fill(child: EcoMeshBackground()),
+        LayoutBuilder(builder: (context, c) {
+          final compact = c.maxWidth < 760;
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+            child: compact
+                ? _buildEcoCompact(context)
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      EcoEntrance(child: buildLeftPane(context)),
+                      const SizedBox(width: 16),
+                      Expanded(child: buildRightPane(context)),
+                    ],
+                  ),
+          );
+        }),
+      ],
     );
+  }
+
+  /// Fenêtre étroite : ID et mot de passe en carte, puis la connexion.
+  Widget _buildEcoCompact(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (!bind.isOutgoingOnly())
+          EcoEntrance(
+            child: EcoGlassCard(
+              radius: 24,
+              padding: const EdgeInsets.fromLTRB(0, 4, 0, 4),
+              child: ChangeNotifierProvider.value(
+                value: gFFI.serverModel,
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  buildIDBoard(context),
+                  buildPasswordBoard(context),
+                ]),
+              ),
+            ),
+          ),
+        const SizedBox(height: 12),
+        Expanded(child: buildRightPane(context)),
+      ],
+    );
+  }
+
+  Widget _ecoLeftShell(bool isIncomingOnly, Widget pane) {
+    if (isIncomingOnly) return pane;
+    return EcoGlassCard(radius: 24, padding: EdgeInsets.zero, child: pane);
   }
 
   Widget _buildEcoBrand(BuildContext context) {
@@ -156,11 +196,11 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     final textColor = Theme.of(context).textTheme.titleLarge?.color;
     return ChangeNotifierProvider.value(
       value: gFFI.serverModel,
-      child: Container(
-        width: isIncomingOnly ? 280.0 : 300.0,
+      child: _ecoLeftShell(
+          isIncomingOnly,
+          Container(
+        width: 280.0,
         color: isIncomingOnly ? Theme.of(context).colorScheme.background : null,
-        decoration: isIncomingOnly ? null : ecoCardDecoration(context),
-        clipBehavior: isIncomingOnly ? Clip.none : Clip.antiAlias,
         child: Stack(
           children: [
             Column(
@@ -204,7 +244,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
               )
           ],
         ),
-      ),
+      )),
     );
   }
 

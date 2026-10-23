@@ -28,6 +28,7 @@ import '../widgets/ecordp_style.dart';
 import '../widgets/ecordp_liquid.dart';
 import '../widgets/ecordp_window.dart';
 import 'ecordp_support.dart';
+import 'ecordp_helpdesk.dart';
 
 class DesktopHomePage extends StatefulWidget {
   const DesktopHomePage({Key? key}) : super(key: key);
@@ -126,6 +127,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
               ),
             ),
           ),
+        const EcoHelpdeskCard(),
         const SizedBox(height: 12),
         Expanded(child: buildRightPane(context)),
       ],
@@ -179,6 +181,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
       buildTip(context),
       if (!isOutgoingOnly) buildIDBoard(context),
       if (!isOutgoingOnly) buildPasswordBoard(context),
+      if (!isIncomingOnly) const EcoHelpdeskCard(),
       FutureBuilder<Widget>(
         future: Future.value(
             Obx(() => buildHelpCards(stateGlobal.updateUrl.value))),

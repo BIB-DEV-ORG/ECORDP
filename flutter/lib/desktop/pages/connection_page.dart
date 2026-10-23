@@ -533,43 +533,40 @@ class _ConnectionPageState extends State<ConnectionPage>
                     );
                   },
                 )),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Wrap(spacing: 8, runSpacing: 8, children: [
-                    EcoPill(
-                        label: translate('Transfer file'),
-                        onDark: true,
-                        onPressed: () => onConnect(isFileTransfer: true)),
-                    EcoPill(
-                        label: translate('Terminal'),
-                        onDark: true,
-                        onPressed: () => onConnect(isTerminal: true)),
-                    if (isDesktop)
-                      EcoPill(
-                          label: translate('TCP tunneling'),
-                          onDark: true,
-                          onPressed: () => onConnect(isTcpTunneling: true)),
-                    EcoPill(
-                        label: translate('View camera'),
-                        onDark: true,
-                        onPressed: () => onConnect(isViewCamera: true)),
-                  ]),
-                ),
                 const SizedBox(width: 12),
                 EcoPill(
                   label: translate('Connect'),
                   icon: Icons.arrow_forward_rounded,
                   primary: true,
-                  height: 52,
+                  height: 56,
                   onPressed: () => onConnect(),
                 ),
               ],
             ),
+            const SizedBox(height: 14),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              EcoPill(
+                  label: translate('Transfer file'),
+                  onDark: true,
+                  height: 34,
+                  onPressed: () => onConnect(isFileTransfer: true)),
+              EcoPill(
+                  label: translate('Terminal'),
+                  onDark: true,
+                  height: 34,
+                  onPressed: () => onConnect(isTerminal: true)),
+              if (isDesktop)
+                EcoPill(
+                    label: translate('TCP tunneling'),
+                    onDark: true,
+                    height: 34,
+                    onPressed: () => onConnect(isTcpTunneling: true)),
+              EcoPill(
+                  label: translate('View camera'),
+                  onDark: true,
+                  height: 34,
+                  onPressed: () => onConnect(isViewCamera: true)),
+            ]),
           ],
         ),
       ]),

@@ -90,8 +90,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   Widget _buildEcoBrand(BuildContext context) {
     return Row(
       children: [
-        ClipRRect(
-            borderRadius: BorderRadius.circular(14), child: loadIcon(42)),
+        ClipRRect(borderRadius: BorderRadius.circular(14), child: loadIcon(42)),
         const SizedBox(width: 12),
         Text(bind.mainGetAppNameSync(), style: ecoTitle(context, size: 26)),
       ],
@@ -664,17 +663,22 @@ class _DesktopHomePageState extends State<DesktopHomePage>
       children: [
         Container(
           margin: EdgeInsets.fromLTRB(
-              0, marginTop, 0, bind.isIncomingOnly() ? marginTop : 0),
+              bind.isIncomingOnly() ? 0 : 14,
+              marginTop,
+              bind.isIncomingOnly() ? 0 : 14,
+              bind.isIncomingOnly() ? marginTop : 14),
           child: Container(
               decoration: BoxDecoration(
+                  borderRadius:
+                      BorderRadius.circular(bind.isIncomingOnly() ? 0 : 22),
                   gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  Color.fromARGB(255, 226, 66, 188),
-                  Color.fromARGB(255, 244, 114, 124),
-                ],
-              )),
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      kEcoCoral,
+                      Color(0xFFFF9370),
+                    ],
+                  )),
               padding: EdgeInsets.all(20),
               child: Column(
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -685,7 +689,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                                   child: Text(
                                 translate(title),
                                 style: TextStyle(
-                                    color: Colors.white,
+                                    color: kEcoInk,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15),
                               ).marginOnly(bottom: 6)),
@@ -697,7 +701,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                             translate(content),
                             style: TextStyle(
                                 height: 1.5,
-                                color: Colors.white,
+                                color: kEcoInk,
                                 fontWeight: FontWeight.normal,
                                 fontSize: 13),
                           ).marginOnly(bottom: 20)
@@ -712,10 +716,10 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                                       padding: 8,
                                       isOutline: true,
                                       text: translate(btnText),
-                                      textColor: Colors.white,
-                                      borderColor: Colors.white,
+                                      textColor: kEcoInk,
+                                      borderColor: kEcoInk,
                                       textSize: 20,
-                                      radius: 10,
+                                      radius: 999,
                                       onTap: onPressed,
                                     )
                                   ])
@@ -828,7 +832,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
 
     bool isChattyMethod(String methodName) {
       switch (methodName) {
-        case kWindowBumpMouse: return true;
+        case kWindowBumpMouse:
+          return true;
       }
 
       return false;
@@ -837,7 +842,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     rustDeskWinManager.setMethodHandler((call, fromWindowId) async {
       if (!isChattyMethod(call.method)) {
         debugPrint(
-          "[Main] call ${call.method} with args ${call.arguments} from window $fromWindowId");
+            "[Main] call ${call.method} with args ${call.arguments} from window $fromWindowId");
       }
       if (call.method == kWindowMainWindowOnTop) {
         windowOnTop(null);
@@ -865,9 +870,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
           connToken: call.arguments['connToken'],
         );
       } else if (call.method == kWindowBumpMouse) {
-        return RdPlatformChannel.instance.bumpMouse(
-          dx: call.arguments['dx'],
-          dy: call.arguments['dy']);
+        return RdPlatformChannel.instance
+            .bumpMouse(dx: call.arguments['dx'], dy: call.arguments['dy']);
       } else if (call.method == kWindowEventMoveTabToNewWindow) {
         final args = call.arguments.split(',');
         int? windowId;

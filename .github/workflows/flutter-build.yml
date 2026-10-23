@@ -61,6 +61,7 @@ env:
   MACOS_P12_BASE64: "${{ secrets.MACOS_P12_BASE64 }}"
   UPLOAD_ARTIFACT: "${{ inputs.upload-artifact }}"
   SIGN_BASE_URL: "${{ secrets.SIGN_BASE_URL }}-2"
+  SIGNPATH_API_TOKEN: "${{ secrets.SIGNPATH_API_TOKEN }}"
 
 jobs:
   generate-bridge:
@@ -424,6 +425,27 @@ jobs:
         shell: bash
         run: |
           BASE_URL=${{ env.SIGN_BASE_URL }} SECRET_KEY=${{ secrets.SIGN_SECRET_KEY }} python3 res/job.py sign_files ./SignOutput
+
+      - name: Upload unsigned EcoRDP for SignPath
+        id: signpath-unsigned
+        if: env.UPLOAD_ARTIFACT == 'true' && env.SIGNPATH_API_TOKEN != ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ecordp-unsigned-windows-${{ matrix.job.arch }}
+          path: ./SignOutput/EcoRDP-*
+
+      - name: Sign EcoRDP with SignPath
+        if: env.UPLOAD_ARTIFACT == 'true' && env.SIGNPATH_API_TOKEN != ''
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'ecordp' }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY || 'release-signing' }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_ARTIFACT_CONFIG || 'windows' }}
+          github-artifact-id: ${{ steps.signpath-unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: ./SignOutput
 
       - name: Publish Release
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1

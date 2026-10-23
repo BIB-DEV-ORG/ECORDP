@@ -1,3 +1,11 @@
+# EcoRDP
+
+EcoRDP is Eco-Hub's remote desktop and remote support client, based on [RustDesk](https://github.com/rustdesk/rustdesk) (AGPL-3.0).
+
+Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/). See [CODE_SIGNING.md](CODE_SIGNING.md).
+
+---
+
 <p align="center">
   <img src="res/logo-header.svg" alt="RustDesk - Your remote desktop"><br>
   <a href="#raw-steps-to-build">Build</a> •

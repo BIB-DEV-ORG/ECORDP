@@ -14,9 +14,11 @@ import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:flutter_hbb/models/server_model.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
+import 'package:window_manager/window_manager.dart';
 
 import '../widgets/ecordp_liquid.dart';
 import '../widgets/ecordp_style.dart';
+import '../widgets/ecordp_window.dart';
 
 const kEcoSupportApi = 'https://rdp.eco-hub.fr/aide/api';
 
@@ -32,6 +34,7 @@ class EcoSupport {
   final code = ''.obs;
   final error = ''.obs;
   Timer? _beat;
+  DateTime? liveSince;
   String? _keptPassword;
   bool _keepDeclined = false;
 
@@ -49,6 +52,10 @@ class EcoSupport {
   Future<void> start() async {
     if (active.value) return;
     active.value = true;
+    // Petite fenêtre « bulle » centrée pour la personne aidée
+    await windowManager.setMinimumSize(const Size(380, 560));
+    await windowManager.setSize(const Size(420, 640));
+    await windowManager.center();
     await bind.mainSetOption(key: 'temporary-password-length', value: '10');
     await bind.mainSetOption(
         key: kOptionVerificationMethod, value: kUseTemporaryPassword);
@@ -113,9 +120,10 @@ class EcoSupport {
       if (j['keep'] == true && !_keepDeclined) {
         state.value = EcoSupportState.keepAsked;
       } else {
-        state.value = gFFI.serverModel.clients.isNotEmpty
-            ? EcoSupportState.live
-            : EcoSupportState.ready;
+        final live = gFFI.serverModel.clients.isNotEmpty;
+        if (live && liveSince == null) liveSince = DateTime.now();
+        if (!live) liveSince = null;
+        state.value = live ? EcoSupportState.live : EcoSupportState.ready;
       }
     } catch (_) {}
   }
@@ -153,7 +161,7 @@ class EcoSupport {
   }
 }
 
-/// Écran affiché à la personne aidée.
+/// Écran affiché à la personne aidée : petite bulle, avatar du technicien, étapes, Arrêter.
 class EcoSupportPage extends StatefulWidget {
   const EcoSupportPage({Key? key}) : super(key: key);
 
@@ -165,171 +173,231 @@ class _EcoSupportPageState extends State<EcoSupportPage>
     with SingleTickerProviderStateMixin {
   final s = EcoSupport.instance;
   final _code = TextEditingController();
-  late final AnimationController _pulse =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 2400))
-        ..repeat();
+  late final AnimationController _pulse = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 2200))
+    ..repeat();
+  Timer? _tick;
+
+  @override
+  void initState() {
+    super.initState();
+    // Compteur « en direct » rafraîchi chaque seconde
+    _tick = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted && s.state.value == EcoSupportState.live) setState(() {});
+    });
+  }
 
   @override
   void dispose() {
+    _tick?.cancel();
     _pulse.dispose();
     _code.dispose();
     super.dispose();
   }
 
-  String get _techName => s.tech.value.isEmpty ? 'Votre technicien' : s.tech.value;
+  String get _tech => s.tech.value.trim();
+  String get _techName => _tech.isEmpty ? 'Votre technicien' : _tech;
 
-  Widget _logo() {
+  String _elapsed() {
+    final since = s.liveSince;
+    if (since == null) return '';
+    final d = DateTime.now().difference(since);
+    final m = d.inMinutes.toString().padLeft(2, '0');
+    final sec = (d.inSeconds % 60).toString().padLeft(2, '0');
+    return '$m:$sec';
+  }
+
+  /// Avatar du technicien avec ondes qui pulsent.
+  Widget _avatar(EcoLiquid l, {required bool live}) {
+    final initial = (_tech.isEmpty ? 'T' : _tech[0]).toUpperCase();
     return SizedBox(
-      width: 150,
-      height: 150,
+      width: 132,
+      height: 132,
       child: AnimatedBuilder(
         animation: _pulse,
         builder: (context, child) => Stack(alignment: Alignment.center, children: [
           for (final shift in [0.0, 0.5])
             Builder(builder: (_) {
               final t = (_pulse.value + shift) % 1;
-              return Transform.scale(
-                scale: 0.6 + t,
-                child: Container(
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: kEcoCoral.withOpacity(0.35 * (1 - t)),
-                  ),
+              return Container(
+                width: 76 + 56 * t,
+                height: 76 + 56 * t,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: l.accent.withOpacity((live ? 0.32 : 0.22) * (1 - t)),
                 ),
               );
             }),
           child!,
         ]),
-        child: ClipRRect(
-            borderRadius: BorderRadius.circular(28), child: loadIcon(96)),
+        child: Container(
+          width: 76,
+          height: 76,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: l.dark ? l.fill : kEcoInk,
+            border: Border.all(color: l.accent, width: 2.5),
+          ),
+          alignment: Alignment.center,
+          child: Text(initial,
+              style: TextStyle(
+                  fontFamily: kEcoDisplay,
+                  fontSize: 34,
+                  color: l.dark ? l.text : const Color(0xFFFFEFDA),
+                  shadows: l.glow)),
+        ),
       ),
     );
   }
 
-  Widget _codeTiles(EcoLiquid l) {
-    final c = s.code.value;
-    if (c.length != 6) return const SizedBox.shrink();
-    return Row(mainAxisSize: MainAxisSize.min, children: [
-      for (final part in [c.substring(0, 2), c.substring(2, 4), c.substring(4)])
+  Widget _stepRow(EcoLiquid l, String text, {required bool done, bool active = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(children: [
         Container(
-          margin: const EdgeInsets.symmetric(horizontal: 3),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          width: 22,
+          height: 22,
           decoration: BoxDecoration(
-              color: l.fill, borderRadius: BorderRadius.circular(12)),
-          child: Text(part,
-              style: TextStyle(
-                  fontFamily: kEcoMono, fontSize: 22, color: l.text)),
+            shape: BoxShape.circle,
+            color: done ? const Color(0xFF34C759) : (active ? l.accent : l.fill),
+          ),
+          child: Icon(done ? Icons.check_rounded : Icons.more_horiz_rounded,
+              size: 14, color: done || active ? Colors.white : l.sub),
         ),
-    ]);
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(text,
+              style: TextStyle(
+                  fontSize: 13.5,
+                  color: done || active ? l.text : l.sub,
+                  fontWeight: active ? FontWeight.w600 : FontWeight.w400)),
+        ),
+      ]),
+    );
   }
 
+  Widget _title(BuildContext context, String t) => Text(t,
+      textAlign: TextAlign.center, style: ecoTitle(context, size: 30));
+
+  Widget _sub(EcoLiquid l, String t) => Text(t,
+      textAlign: TextAlign.center,
+      style: TextStyle(fontSize: 14, color: l.sub, height: 1.5));
+
   Widget _body(BuildContext context, EcoLiquid l) {
-    final sub = TextStyle(fontFamily: kEcoInter, fontSize: 15, color: l.sub, height: 1.5);
     switch (s.state.value) {
       case EcoSupportState.starting:
         return Column(mainAxisSize: MainAxisSize.min, children: [
-          _logo(),
-          Text('Connexion au service d’aide…', style: sub),
+          _avatar(l, live: false),
+          const SizedBox(height: 8),
+          _sub(l, 'Connexion au service d’aide…'),
         ]);
       case EcoSupportState.needCode:
         return Column(mainAxisSize: MainAxisSize.min, children: [
-          ClipRRect(borderRadius: BorderRadius.circular(20), child: loadIcon(72)),
-          const SizedBox(height: 18),
-          Text('Votre code d’aide', style: ecoTitle(context, size: 30)),
+          _title(context, 'Votre code'),
           const SizedBox(height: 6),
-          Text('Saisissez le code donné par votre technicien.', style: sub),
+          _sub(l, 'Saisissez le code à 6 chiffres\ndonné par votre technicien.'),
           const SizedBox(height: 18),
-          SizedBox(
-            width: 260,
-            child: TextField(
-              controller: _code,
-              autofocus: true,
-              textAlign: TextAlign.center,
-              keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(6)
-              ],
-              style: TextStyle(
-                  fontFamily: kEcoMono, fontSize: 30, letterSpacing: 8, color: l.text),
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: l.fill,
-                hintText: '000000',
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none),
-              ),
-              onSubmitted: (v) => s.submitCode(v),
+          TextField(
+            controller: _code,
+            autofocus: true,
+            textAlign: TextAlign.center,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(6)
+            ],
+            style: TextStyle(
+                fontFamily: kEcoMono, fontSize: 30, letterSpacing: 8, color: l.text),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: l.fill,
+              hintText: '000000',
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none),
             ),
+            onSubmitted: (v) => s.submitCode(v),
           ),
           const SizedBox(height: 8),
           Obx(() => Text(s.error.value,
-              style: const TextStyle(color: Color(0xFFD9432A), fontWeight: FontWeight.w600))),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  color: Color(0xFFD9432A), fontWeight: FontWeight.w600))),
           const SizedBox(height: 8),
-          EcoGradientButton(label: 'Valider', onPressed: () => s.submitCode(_code.text)),
+          SizedBox(
+            width: double.infinity,
+            child: EcoGradientButton(
+                label: 'Valider', onPressed: () => s.submitCode(_code.text)),
+          ),
         ]);
       case EcoSupportState.ready:
         return Column(mainAxisSize: MainAxisSize.min, children: [
-          _logo(),
-          Text('$_techName arrive', style: ecoTitle(context, size: 34)),
-          const SizedBox(height: 8),
-          Text('Votre session d’aide est prête.\nGardez cette fenêtre ouverte.',
-              textAlign: TextAlign.center, style: sub),
+          _avatar(l, live: false),
+          _title(context, '$_techName arrive'),
+          const SizedBox(height: 6),
+          _sub(l, 'Gardez cette fenêtre ouverte.'),
           const SizedBox(height: 18),
-          _codeTiles(l),
+          Container(
+            padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+            decoration:
+                BoxDecoration(color: l.fill, borderRadius: BorderRadius.circular(16)),
+            child: Column(children: [
+              _stepRow(l, 'Connecté au service d’aide', done: true),
+              _stepRow(l, '$_techName est prévenu', done: true),
+              _stepRow(l, 'En attente de sa connexion', done: false, active: true),
+            ]),
+          ),
         ]);
       case EcoSupportState.live:
         return Column(mainAxisSize: MainAxisSize.min, children: [
+          _avatar(l, live: true),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-                color: kEcoCoral.withOpacity(0.16),
+                color: l.accent.withOpacity(0.16),
                 borderRadius: BorderRadius.circular(999)),
-            child: const Row(mainAxisSize: MainAxisSize.min, children: [
-              EcoLiveDot(color: kEcoCoral),
-              SizedBox(width: 8),
-              Text('En direct',
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              EcoLiveDot(color: l.accent),
+              const SizedBox(width: 8),
+              Text('En direct  ${_elapsed()}',
                   style: TextStyle(
-                      fontWeight: FontWeight.w600, color: Color(0xFFD9532F))),
+                      fontWeight: FontWeight.w600,
+                      color: l.accent,
+                      fontFeatures: const [FontFeature.tabularFigures()])),
             ]),
           ),
-          const SizedBox(height: 18),
-          Text('$_techName vous aide\nen ce moment',
-              textAlign: TextAlign.center, style: ecoTitle(context, size: 34)),
-          const SizedBox(height: 8),
-          Text('Il voit votre écran et peut utiliser la souris.\nNe fermez pas cette fenêtre.',
-              textAlign: TextAlign.center, style: sub),
+          const SizedBox(height: 12),
+          _title(context, '$_techName vous aide'),
+          const SizedBox(height: 6),
+          _sub(l, 'Il voit votre écran et peut utiliser la souris.\nVous gardez la main à tout moment.'),
         ]);
       case EcoSupportState.keepAsked:
         return Column(mainAxisSize: MainAxisSize.min, children: [
-          ClipRRect(borderRadius: BorderRadius.circular(20), child: loadIcon(72)),
+          _avatar(l, live: false),
+          _title(context, 'Garder l’accès ?'),
+          const SizedBox(height: 6),
+          _sub(l,
+              '$_techName souhaite pouvoir vous aider plus tard sans nouveau code.\nEcoRDP sera installé sur cet ordinateur.'),
           const SizedBox(height: 18),
-          Text('Garder l’accès ?',
-              textAlign: TextAlign.center, style: ecoTitle(context, size: 32)),
-          const SizedBox(height: 8),
-          Text(
-              '$_techName souhaite pouvoir vous aider plus tard\nsans nouveau code. EcoRDP sera installé sur cet ordinateur.',
-              textAlign: TextAlign.center,
-              style: sub),
-          const SizedBox(height: 20),
-          Row(mainAxisSize: MainAxisSize.min, children: [
-            TextButton(onPressed: s.declineKeep, child: const Text('Non merci')),
-            const SizedBox(width: 12),
-            EcoGradientButton(label: 'Autoriser', onPressed: s.acceptKeep),
+          Row(children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: s.declineKeep,
+                style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
+                child: const Text('Non merci'),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: EcoGradientButton(label: 'Autoriser', onPressed: s.acceptKeep)),
           ]),
         ]);
       case EcoSupportState.kept:
         return Column(mainAxisSize: MainAxisSize.min, children: [
-          ClipRRect(borderRadius: BorderRadius.circular(20), child: loadIcon(72)),
-          const SizedBox(height: 18),
-          Text('Accès permanent activé',
-              textAlign: TextAlign.center, style: ecoTitle(context, size: 30)),
-          const SizedBox(height: 8),
-          Text('Terminez l’installation dans la fenêtre qui s’ouvre.\n$_techName pourra se connecter quand vous le souhaitez.',
-              textAlign: TextAlign.center, style: sub),
+          _avatar(l, live: false),
+          _title(context, 'Accès activé'),
+          const SizedBox(height: 6),
+          _sub(l,
+              'Terminez l’installation dans la fenêtre qui s’ouvre.\n$_techName pourra vous aider quand vous le souhaitez.'),
         ]);
     }
   }
@@ -337,45 +405,80 @@ class _EcoSupportPageState extends State<EcoSupportPage>
   @override
   Widget build(BuildContext context) {
     final l = EcoLiquid.of(context);
-    return Stack(children: [
-      const Positioned.fill(child: EcoMeshBackground()),
-      Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 460),
-            child: EcoGlassCard(
-              padding: const EdgeInsets.fromLTRB(28, 30, 28, 24),
-              child: Obx(() => Column(mainAxisSize: MainAxisSize.min, children: [
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 450),
-                      switchInCurve: Curves.easeOutCubic,
-                      transitionBuilder: (child, a) => FadeTransition(
-                          opacity: a,
-                          child: ScaleTransition(
-                              scale: Tween(begin: 0.96, end: 1.0).animate(a),
-                              child: child)),
-                      child: KeyedSubtree(
-                          key: ValueKey(s.state.value), child: _body(context, l)),
-                    ),
-                    if (s.state.value != EcoSupportState.kept) ...[
-                      const SizedBox(height: 26),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed: () => s.stop(),
-                          style: OutlinedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(50)),
-                          child: const Text('Arrêter l’aide',
-                              style: TextStyle(fontWeight: FontWeight.w600)),
-                        ),
-                      ),
-                    ],
-                  ])),
+    final bubble = ecoBubbleWindow;
+    final card = EcoGlassCard(
+      radius: 26,
+      padding: const EdgeInsets.fromLTRB(22, 14, 22, 20),
+      child: Obx(() => Column(children: [
+            // En-tête déplaçable : logo, nom, réduire
+            EcoMoveArea(
+              child: Row(children: [
+                ClipRRect(borderRadius: BorderRadius.circular(9), child: loadIcon(28)),
+                const SizedBox(width: 10),
+                Text('EcoRDP Aide',
+                    style: TextStyle(fontWeight: FontWeight.w600, color: l.text)),
+                const Spacer(),
+                if (bubble)
+                  IconButton(
+                    tooltip: translate('Minimize'),
+                    icon: Icon(Icons.remove_rounded, color: l.sub, size: 20),
+                    onPressed: () => windowManager.minimize(),
+                  ),
+              ]),
             ),
-          ),
-        ),
-      ),
-    ]);
+            Expanded(
+              child: Center(
+                child: SingleChildScrollView(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 420),
+                    switchInCurve: Curves.easeOutCubic,
+                    transitionBuilder: (child, a) => FadeTransition(
+                        opacity: a,
+                        child: ScaleTransition(
+                            scale: Tween(begin: 0.96, end: 1.0).animate(a),
+                            child: child)),
+                    child: KeyedSubtree(
+                        key: ValueKey(s.state.value), child: _body(context, l)),
+                  ),
+                ),
+              ),
+            ),
+            if (s.state.value != EcoSupportState.kept) ...[
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => s.stop(),
+                  icon: const Icon(Icons.stop_circle_outlined, size: 18),
+                  label: const Text('Arrêter l’aide',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(50),
+                    foregroundColor: const Color(0xFFE0443E),
+                    side: BorderSide(color: const Color(0xFFE0443E).withOpacity(0.45)),
+                    shape: const StadiumBorder(),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: gFFI.serverModel.serverId,
+                  builder: (_, v, __) => Text('ID ${v.text}',
+                      style: TextStyle(
+                          fontFamily: kEcoMono, fontSize: 11.5, color: l.sub))),
+            ],
+          ])),
+    );
+    // En bulle : seule la carte est visible, avec une petite marge pour son ombre
+    return bubble
+        ? Padding(padding: const EdgeInsets.all(8), child: card)
+        : Stack(children: [
+            const Positioned.fill(child: EcoMeshBackground()),
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 440, maxHeight: 660),
+                child: Padding(padding: const EdgeInsets.all(16), child: card),
+              ),
+            ),
+          ]);
   }
 }

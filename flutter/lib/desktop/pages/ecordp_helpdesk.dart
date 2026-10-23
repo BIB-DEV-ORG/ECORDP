@@ -12,6 +12,7 @@ import 'package:http/http.dart' as http;
 
 import '../widgets/ecordp_liquid.dart';
 import '../widgets/ecordp_style.dart';
+import '../widgets/ecordp_window.dart';
 import 'ecordp_support.dart';
 
 /// Carte d'accès rapide posée sur l'accueil.
@@ -59,7 +60,8 @@ class EcoHelpdeskCard extends StatelessWidget {
 
 Future<void> showEcoHelpdesk(BuildContext context) => showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.35),
+      // En bulle, un voile peindrait tout le rectangle transparent de la fenêtre
+      barrierColor: ecoBubbleNow() ? Colors.transparent : Colors.black.withOpacity(0.35),
       builder: (_) => const _EcoHelpdeskDialog(),
     );
 

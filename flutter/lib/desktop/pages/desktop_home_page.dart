@@ -26,6 +26,7 @@ import 'package:window_size/window_size.dart' as window_size;
 import '../widgets/button.dart';
 import '../widgets/ecordp_style.dart';
 import '../widgets/ecordp_liquid.dart';
+import 'ecordp_support.dart';
 
 class DesktopHomePage extends StatefulWidget {
   const DesktopHomePage({Key? key}) : super(key: key);
@@ -61,7 +62,12 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   Widget build(BuildContext context) {
     super.build(context);
     final isIncomingOnly = bind.isIncomingOnly();
-    if (!isIncomingOnly) return _buildBlock(child: _buildEcoLayout(context));
+    if (!isIncomingOnly) {
+      return _buildBlock(
+          child: Obx(() => EcoSupport.instance.active.value
+              ? const EcoSupportPage()
+              : _buildEcoLayout(context)));
+    }
     return _buildBlock(
         child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -804,6 +810,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   @override
   void initState() {
     super.initState();
+    if (EcoSupport.candidate) EcoSupport.instance.start();
     _updateTimer = periodic_immediate(const Duration(seconds: 1), () async {
       await gFFI.serverModel.fetchID();
       final error = await bind.mainGetError();

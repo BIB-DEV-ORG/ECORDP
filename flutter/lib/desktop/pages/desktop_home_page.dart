@@ -26,6 +26,7 @@ import 'package:window_size/window_size.dart' as window_size;
 import '../widgets/button.dart';
 import '../widgets/ecordp_style.dart';
 import '../widgets/ecordp_liquid.dart';
+import '../widgets/ecordp_window.dart';
 import 'ecordp_support.dart';
 
 class DesktopHomePage extends StatefulWidget {
@@ -82,7 +83,10 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   Widget _buildEcoLayout(BuildContext context) {
     return Stack(
       children: [
-        const Positioned.fill(child: EcoMeshBackground()),
+        Positioned.fill(
+            child: Obx(() => ecoBubbleNow()
+                ? const SizedBox.shrink()
+                : const EcoMeshBackground())),
         LayoutBuilder(builder: (context, c) {
           final compact = c.maxWidth < 760;
           return Padding(
@@ -141,13 +145,15 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   }
 
   Widget _buildEcoBrand(BuildContext context) {
-    return Row(
+    return EcoMoveArea(
+        child: Row(
       children: [
         ClipRRect(borderRadius: BorderRadius.circular(14), child: loadIcon(42)),
         const SizedBox(width: 12),
         Text(bind.mainGetAppNameSync(), style: ecoTitle(context, size: 26)),
+        const Spacer(),
       ],
-    ).marginOnly(left: 22, right: 16, top: 22, bottom: 4);
+    ).marginOnly(left: 22, right: 16, top: 22, bottom: 4));
   }
 
   Widget _buildBlock({required Widget child}) {

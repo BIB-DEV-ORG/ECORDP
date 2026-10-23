@@ -18,6 +18,7 @@ import 'package:get/get_rx/src/rx_workers/utils/debouncer.dart';
 import 'package:scroll_pos/scroll_pos.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import 'ecordp_window.dart';
 
 import '../../utils/multi_window_manager.dart';
 
@@ -513,7 +514,10 @@ class _DesktopTabState extends State<DesktopTab>
     return Column(children: [
       Obx(() {
         if (stateGlobal.showTabBar.isTrue &&
-            !(kUseCompatibleUiMode && isHideSingleItem())) {
+            !(kUseCompatibleUiMode && isHideSingleItem()) &&
+            !(tabType == DesktopTabType.main &&
+                ecoBubbleWindow &&
+                isHideSingleItem())) {
           final showBottomDivider = _showTabBarBottomDivider(tabType);
           return SizedBox(
             height: _kTabBarHeight,

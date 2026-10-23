@@ -18,6 +18,7 @@ import '../../common/widgets/autocomplete.dart';
 import '../../models/platform_model.dart';
 import '../../desktop/widgets/ecordp_style.dart';
 import '../../desktop/widgets/ecordp_liquid.dart';
+import '../../desktop/widgets/ecordp_window.dart';
 
 class OnlineStatusWidget extends StatefulWidget {
   const OnlineStatusWidget({Key? key, this.onSvcStatusChanged})
@@ -315,7 +316,12 @@ class _ConnectionPageState extends State<ConnectionPage>
             ),
           ),
         ),
-        if (!isOutgoingOnly) OnlineStatusWidget().marginOnly(top: 4),
+        // L'état reste calculé par OnlineStatusWidget (masqué) et s'affiche en pastille
+        if (!isOutgoingOnly)
+          Stack(children: [
+            Offstage(child: OnlineStatusWidget()),
+            const Align(alignment: Alignment.centerLeft, child: EcoStatusPill()),
+          ]).marginOnly(top: 10),
       ],
     );
   }
@@ -346,7 +352,8 @@ class _ConnectionPageState extends State<ConnectionPage>
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(children: [
+            EcoMoveArea(
+                child: Row(children: [
               const EcoIconDot(Icons.screen_share_rounded, size: 34),
               const SizedBox(width: 12),
               Expanded(
@@ -364,7 +371,8 @@ class _ConnectionPageState extends State<ConnectionPage>
                       : Icons.dark_mode_rounded),
                 ),
               ),
-            ]).marginOnly(bottom: 10),
+              const EcoWindowControls(),
+            ])).marginOnly(bottom: 10),
             Row(
               children: [
                 Expanded(

@@ -30,6 +30,7 @@ import 'mobile/pages/server_page.dart';
 import 'mobile/widgets/deploy_dialog.dart';
 import 'models/platform_model.dart';
 import 'desktop/widgets/ecordp_liquid.dart';
+import 'desktop/widgets/ecordp_window.dart';
 
 /// Basic window and launch properties.
 int? kWindowId;
@@ -171,6 +172,7 @@ void runMainApp(bool startService) async {
     windowManager.setTitle(getWindowName());
     // Do not use `windowManager.setResizable()` here.
     setResizable(!bind.isIncomingOnly());
+    await ecoApplyBubbleFrame();
   });
 }
 
@@ -539,6 +541,8 @@ class _AppState extends State<App> with WidgetsBindingObserver {
                   }
                   if (isLinux) {
                     return buildVirtualWindowFrame(context, child);
+                  } else if (ecoBubbleWindow) {
+                    return child;
                   } else {
                     return workaroundWindowBorder(context, child);
                   }

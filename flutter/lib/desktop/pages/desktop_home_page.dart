@@ -128,9 +128,16 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     );
   }
 
+  // Carte « installer / mise à jour » : encre sur le panneau pêche, anthracite en sombre.
+  Color _ecoCardBg(BuildContext context) =>
+      ecoIsDark(context) ? const Color(0xFF202023) : kEcoInk;
+  Color _ecoCardFg(BuildContext context) =>
+      ecoIsDark(context) ? Colors.white : const Color(0xFFFFEFDA);
+
   Widget _ecoLeftShell(bool isIncomingOnly, Widget pane) {
     if (isIncomingOnly) return pane;
-    return EcoGlassCard(radius: 24, padding: EdgeInsets.zero, child: pane);
+    return EcoGlassCard(
+        radius: 24, padding: EdgeInsets.zero, tint: EcoLiquid.peach, child: pane);
   }
 
   Widget _buildEcoBrand(BuildContext context) {
@@ -321,6 +328,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                           fontSize: 27,
                           fontFamily: kEcoMono,
                           letterSpacing: 0.5,
+                          shadows: EcoLiquid.of(context).glow,
                         ),
                       ).workaroundFreezeLinuxMint(),
                     ),
@@ -446,7 +454,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                             style: TextStyle(
                                 fontSize: 19,
                                 fontFamily: kEcoMono,
-                                letterSpacing: 2),
+                                letterSpacing: 2,
+                                shadows: EcoLiquid.of(context).glow),
                           ).workaroundFreezeLinuxMint(),
                         ),
                       ),
@@ -723,8 +732,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                     colors: [
-                      kEcoCoral,
-                      Color(0xFFFF9370),
+                      _ecoCardBg(context),
+                      _ecoCardBg(context),
                     ],
                   )),
               padding: EdgeInsets.all(20),
@@ -737,7 +746,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                                   child: Text(
                                 translate(title),
                                 style: TextStyle(
-                                    color: kEcoInk,
+                                    color: _ecoCardFg(context),
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15),
                               ).marginOnly(bottom: 6)),
@@ -749,7 +758,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                             translate(content),
                             style: TextStyle(
                                 height: 1.5,
-                                color: kEcoInk,
+                                color: _ecoCardFg(context),
                                 fontWeight: FontWeight.normal,
                                 fontSize: 13),
                           ).marginOnly(bottom: 20)
@@ -764,8 +773,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                                       padding: 8,
                                       isOutline: true,
                                       text: translate(btnText),
-                                      textColor: kEcoInk,
-                                      borderColor: kEcoInk,
+                                      textColor: _ecoCardFg(context),
+                                      borderColor: _ecoCardFg(context),
                                       textSize: 20,
                                       radius: 999,
                                       onTap: onPressed,

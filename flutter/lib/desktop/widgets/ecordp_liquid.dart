@@ -1,4 +1,4 @@
-// EcoRDP « Liquid » : verre dépoli, fond vivant, contrôles iOS et bascule de thème
+// EcoRDP : palette claire pastel / sombre noir, contrôles iOS et bascule de thème
 // qui se répand comme un liquide depuis le bouton.
 import 'dart:math';
 import 'dart:ui' as ui;
@@ -9,45 +9,60 @@ import 'package:flutter_hbb/common.dart';
 
 import 'ecordp_style.dart';
 
-/// Couleurs Liquid pour le thème courant.
+/// Palette EcoRDP. Clair : blanc chaud sobre, touches pastel EcoHub.
+/// Sombre : noir pur, cartes anthracite à bord fin, texte blanc légèrement lumineux.
 class EcoLiquid {
   final bool dark;
-  final Color bg, text, sub, glass, glassHi, edge, fill, thumb, track;
-  final List<Color> blobs;
+  final Color bg, card, text, sub, edge, edgeHi, fill, thumb, track, accent, onAccent;
 
-  const EcoLiquid._(this.dark, this.bg, this.text, this.sub, this.glass,
-      this.glassHi, this.edge, this.fill, this.thumb, this.track, this.blobs);
+  const EcoLiquid._(this.dark, this.bg, this.card, this.text, this.sub, this.edge,
+      this.edgeHi, this.fill, this.thumb, this.track, this.accent, this.onAccent);
 
   static const light = EcoLiquid._(
     false,
-    Color(0xFFF4ECE4),
-    Color(0xFF1C1410),
-    Color(0x8C1C1410),
-    Color(0x8FFFFFFF),
-    Color(0xD9FFFFFF),
-    Color(0xBFFFFFFF),
-    Color(0x1F767680),
+    Color(0xFFF7F5F2), // fond
+    Color(0xFFFFFFFF), // cartes
+    Color(0xFF1C1410), // encre
+    Color(0xFF7A6E66), // texte secondaire
+    Color(0xFFECE8E3), // bordure
     Color(0xFFFFFFFF),
-    Color(0x141C1410),
-    [Color(0x8CFB7D59), Color(0xBFE2C6F0), Color(0x99F6D56A), Color(0xB3B3D6F5)],
+    Color(0xFFF2EFEB), // champs, segmenté
+    Color(0xFFFFFFFF),
+    Color(0xFFECE8E3),
+    Color(0xFFFB7D59), // corail EcoHub
+    Color(0xFF1C1410),
   );
 
   static const darkTheme = EcoLiquid._(
     true,
-    Color(0xFF0E0A08),
-    Color(0xFFFFF4EA),
-    Color(0x8CFFF4EA),
-    Color(0x85261C17),
-    Color(0x1AFFFFFF),
+    Color(0xFF000000),
+    Color(0xFF161618),
+    Color(0xFFFFFFFF),
+    Color(0xFF8E8E93),
     Color(0x17FFFFFF),
-    Color(0x3D767680),
-    Color(0x2BFFFFFF),
+    Color(0x2EFFFFFF), // reflet du bord haut, façon verre
+    Color(0xFF202023),
+    Color(0xFF323236),
     Color(0x1AFFFFFF),
-    [Color(0x6BFB7D59), Color(0x4DA05ADC), Color(0x29F6D56A), Color(0x38508CDC)],
+    Color(0xFFF0936A),
+    Color(0xFF000000),
   );
+
+  // Pastels EcoHub (thème clair) pour les pastilles et tuiles
+  static const peach = Color(0xFFFFC4AE);
+  static const pink = Color(0xFFFFB3C0);
+  static const sky = Color(0xFFB3D6F5);
+  static const butter = Color(0xFFF6D56A);
+  static const mint = Color(0xFFB7E4C7);
+  static const cream = Color(0xFFFFEFDA);
 
   static EcoLiquid of(BuildContext context) =>
       ecoIsDark(context) ? darkTheme : light;
+
+  /// Léger halo blanc sur le texte en thème sombre.
+  List<Shadow>? get glow => dark
+      ? [Shadow(color: Colors.white.withOpacity(0.35), blurRadius: 10)]
+      : null;
 }
 
 const kEcoInter = 'Inter';
@@ -60,119 +75,94 @@ TextStyle ecoEyebrow(BuildContext context) => TextStyle(
       color: EcoLiquid.of(context).sub,
     );
 
-/// Fond vivant : grandes taches de couleur floues qui dérivent lentement.
-class EcoMeshBackground extends StatefulWidget {
+/// Fond uni du thème.
+class EcoMeshBackground extends StatelessWidget {
   const EcoMeshBackground({Key? key}) : super(key: key);
 
   @override
-  State<EcoMeshBackground> createState() => _EcoMeshBackgroundState();
+  Widget build(BuildContext context) =>
+      ColoredBox(color: EcoLiquid.of(context).bg);
 }
 
-class _EcoMeshBackgroundState extends State<EcoMeshBackground>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(seconds: 24))
-        ..repeat();
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
+/// Pastille ronde sombre avec icône claire (style EcoHub).
+class EcoIconDot extends StatelessWidget {
+  final IconData icon;
+  final double size;
+  const EcoIconDot(this.icon, {Key? key, this.size = 40}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final l = EcoLiquid.of(context);
-    return RepaintBoundary(
-      child: AnimatedBuilder(
-        animation: _c,
-        builder: (context, _) =>
-            CustomPaint(painter: _MeshPainter(l, _c.value * 2 * pi)),
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: l.dark ? l.fill : l.text,
+        border: l.dark ? Border.all(color: l.edgeHi) : null,
       ),
+      child: Icon(icon,
+          size: size * 0.48, color: l.dark ? l.text : const Color(0xFFFFEFDA)),
     );
   }
 }
 
-class _MeshPainter extends CustomPainter {
-  final EcoLiquid l;
-  final double a;
-  _MeshPainter(this.l, this.a);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Offset.zero & size, Paint()..color = l.bg);
-    final w = size.width, h = size.height;
-    final spots = [
-      (Offset(w * 0.08 + 90 * sin(a), h * 0.05 + 60 * cos(a)), w * 0.42, l.blobs[0]),
-      (Offset(w * 0.78 - 110 * sin(a * 2), h * 0.85 + 70 * cos(a)), w * 0.45, l.blobs[1]),
-      (Offset(w * 0.45 + 80 * cos(a), h * -0.05 + 70 * sin(a * 2)), w * 0.36, l.blobs[2]),
-      (Offset(w * 0.92 + 50 * sin(a), h * 0.12 - 50 * cos(a)), w * 0.3, l.blobs[3]),
-    ];
-    for (final (c, r, color) in spots) {
-      canvas.drawCircle(
-        c,
-        r,
-        Paint()
-          ..shader = ui.Gradient.radial(
-              c, r, [color, color.withOpacity(0)], const [0, 1]),
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(_MeshPainter old) => old.a != a || old.l != l;
-}
-
-/// Carte en verre dépoli.
+/// Carte unie à bord fin. [tint] : couleur pastel (thème clair seulement).
 class EcoGlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
   final double radius;
+  final Color? tint;
   const EcoGlassCard(
       {Key? key,
       required this.child,
       this.padding = const EdgeInsets.all(20),
-      this.radius = 26})
+      this.radius = 22,
+      this.tint})
       : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final l = EcoLiquid.of(context);
     final br = BorderRadius.circular(radius);
+    if (l.dark) {
+      // Liseré d'un pixel, plus clair en haut : bord de verre sur fond noir.
+      return Container(
+        padding: const EdgeInsets.all(1),
+        decoration: BoxDecoration(
+          borderRadius: br,
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [l.edgeHi, l.edge, l.edge],
+            stops: const [0, 0.3, 1],
+          ),
+        ),
+        child: Container(
+          padding: padding,
+          decoration: BoxDecoration(
+              color: l.card, borderRadius: BorderRadius.circular(radius - 1)),
+          child: child,
+        ),
+      );
+    }
+    final color = tint ?? l.card;
     return Container(
+      padding: padding,
       decoration: BoxDecoration(
+        color: color,
         borderRadius: br,
+        border: Border.all(color: tint != null ? color : l.edge, width: 1),
         boxShadow: [
           BoxShadow(
-            color: l.dark
-                ? Colors.black.withOpacity(0.55)
-                : const Color(0xFF5A2D0F).withOpacity(0.16),
-            blurRadius: 50,
-            offset: const Offset(0, 24),
-            spreadRadius: -24,
+            color: const Color(0xFF1C1410).withOpacity(0.06),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+            spreadRadius: -12,
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: br,
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-          child: Container(
-            padding: padding,
-            decoration: BoxDecoration(
-              borderRadius: br,
-              border: Border.all(color: l.edge),
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [l.glassHi.withOpacity(l.dark ? 0.06 : 0.35), l.glass],
-                stops: const [0, 0.35],
-              ),
-            ),
-            child: child,
-          ),
-        ),
-      ),
+      child: child,
     );
   }
 }
@@ -276,6 +266,7 @@ class _EcoGradientButtonState extends State<EcoGradientButton> {
 
   @override
   Widget build(BuildContext context) {
+    final l = EcoLiquid.of(context);
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hover = true),
@@ -294,19 +285,14 @@ class _EcoGradientButtonState extends State<EcoGradientButton> {
             padding: const EdgeInsets.symmetric(horizontal: 22),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              gradient: const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFFFF9673), Color(0xFFF56F4B)],
-              ),
-              border: Border(
-                  top: BorderSide(color: Colors.white.withOpacity(0.45))),
+              color: l.accent,
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFF56F4B).withOpacity(_hover ? 0.85 : 0.6),
-                  blurRadius: _hover ? 30 : 24,
-                  offset: const Offset(0, 12),
-                  spreadRadius: -10,
+                  color: l.accent.withOpacity(
+                      l.dark ? (_hover ? 0.45 : 0.25) : (_hover ? 0.4 : 0.2)),
+                  blurRadius: _hover ? 26 : 18,
+                  offset: Offset(0, l.dark ? 0 : 8),
+                  spreadRadius: l.dark ? -4 : -8,
                 ),
               ],
             ),
@@ -315,14 +301,14 @@ class _EcoGradientButtonState extends State<EcoGradientButton> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(widget.label,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontFamily: kEcoInter,
-                        color: Colors.white,
+                        color: l.onAccent,
                         fontSize: 16,
                         fontWeight: FontWeight.w600)),
                 if (widget.icon != null) ...[
                   const SizedBox(width: 8),
-                  Icon(widget.icon, color: Colors.white, size: 18),
+                  Icon(widget.icon, color: l.onAccent, size: 18),
                 ],
               ],
             ),
@@ -369,22 +355,17 @@ class _EcoRoundButtonState extends State<EcoRoundButton> {
             scale: _hover ? 1.06 : 1,
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeOutBack,
-            child: ClipOval(
-              child: BackdropFilter(
-                filter: ui.ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                child: Container(
-                  width: widget.size,
-                  height: widget.size,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: l.glass,
-                    border: Border.all(color: l.edge),
-                  ),
-                  child: IconTheme(
-                    data: IconThemeData(color: l.text, size: 19),
-                    child: Center(child: widget.child),
-                  ),
-                ),
+            child: Container(
+              width: widget.size,
+              height: widget.size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _hover ? l.fill : l.card,
+                border: Border.all(color: l.dark ? l.edgeHi : l.edge),
+              ),
+              child: IconTheme(
+                data: IconThemeData(color: l.text, size: 19),
+                child: Center(child: widget.child),
               ),
             ),
           ),

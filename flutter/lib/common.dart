@@ -248,18 +248,18 @@ class ColorThemeExtension extends ThemeExtension<ColorThemeExtension> {
 class MyTheme {
   MyTheme._();
 
-  // EcoRDP : palette EcoHub (crème, corail, encre)
-  static const Color grayBg = Color(0xFFFFF4EA);
+  // EcoRDP : clair blanc chaud + corail EcoHub ; sombre noir pur, cartes anthracite
+  static const Color grayBg = Color(0xFFF2EFEB);
   static const Color accent = Color(0xFFFB7D59);
   static const Color accent50 = Color(0x77FB7D59);
   static const Color accent80 = Color(0xAAE15A36);
-  static const Color canvasColor = Color(0xFF1B1512);
-  static const Color border = Color(0xFFF0E2D6);
+  static const Color canvasColor = Color(0xFF000000);
+  static const Color border = Color(0xFFECE8E3);
   static const Color idColor = Color(0xFFE15A36);
   static const Color ink = Color(0xFF1C1410);
-  static const Color cream = Color(0xFFFFFDFA);
-  static const Color dusk = Color(0xFF1B1512);
-  static const Color duskCard = Color(0xFF2A211C);
+  static const Color cream = Color(0xFFF7F5F2);
+  static const Color dusk = Color(0xFF000000);
+  static const Color duskCard = Color(0xFF161618);
   static const Color darkGray = Color.fromARGB(255, 148, 148, 148);
   static const Color cmIdColor = Color(0xFF21790B);
   static const Color dark = Colors.black87;
@@ -379,7 +379,7 @@ class MyTheme {
     useMaterial3: false,
     fontFamily: 'Inter',
     brightness: Brightness.light,
-    hoverColor: Color(0xFFFFEFDA),
+    hoverColor: Color(0xFFF2EFEB),
     scaffoldBackgroundColor: cream,
     dialogBackgroundColor: cream,
     appBarTheme: AppBarTheme(
@@ -504,7 +504,9 @@ class MyTheme {
           )
         : null,
     textTheme: const TextTheme(
-      titleLarge: TextStyle(fontSize: 22, fontFamily: 'Olivier'),
+      titleLarge: TextStyle(fontSize: 22, fontFamily: 'Olivier', shadows: [
+        Shadow(color: Color(0x59FFFFFF), blurRadius: 10)
+      ]),
       titleSmall: TextStyle(fontSize: 14),
       bodySmall: TextStyle(fontSize: 12, height: 1.25),
       bodyMedium: TextStyle(fontSize: 14, height: 1.25),

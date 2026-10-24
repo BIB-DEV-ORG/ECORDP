@@ -1,3 +1,4 @@
+import 'package:flutter_hbb/desktop/widgets/ecordp_liquid.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -145,7 +146,7 @@ class _PeerCardState extends State<_PeerCard>
       children: [
         Container(
             decoration: BoxDecoration(
-              color: str2color('${peer.id}${peer.platform}', 0x7f),
+              color: ecoPeerColor(context, '${peer.id}${peer.platform}'),
               borderRadius: isPortrait
                   ? BorderRadius.circular(_tileRadius)
                   : BorderRadius.only(
@@ -158,13 +159,17 @@ class _PeerCardState extends State<_PeerCard>
             height: isPortrait ? 50 : null,
             child: Stack(
               children: [
-                getPlatformImage(peer.platform, size: isPortrait ? 38 : 30)
+                ColorFiltered(
+                        colorFilter: ColorFilter.mode(
+                            ecoPeerFg(context), BlendMode.srcIn),
+                        child: getPlatformImage(peer.platform,
+                            size: isPortrait ? 38 : 30))
                     .paddingAll(6),
                 if (_shouldBuildPasswordIcon(peer))
                   Positioned(
                     top: 1,
                     left: 1,
-                    child: Icon(Icons.key, size: 6, color: Colors.white),
+                    child: Icon(Icons.key, size: 6, color: ecoPeerFg(context)),
                   ),
               ],
             )),
@@ -303,7 +308,7 @@ class _PeerCardState extends State<_PeerCard>
               children: [
                 Expanded(
                   child: Container(
-                    color: str2color('${peer.id}${peer.platform}', 0x7f),
+                    color: ecoPeerColor(context, '${peer.id}${peer.platform}'),
                     child: Row(
                       children: [
                         Expanded(
@@ -313,7 +318,11 @@ class _PeerCardState extends State<_PeerCard>
                               Container(
                                 padding: const EdgeInsets.all(6),
                                 child:
-                                    getPlatformImage(peer.platform, size: 60),
+                                    ColorFiltered(
+                                    colorFilter: ColorFilter.mode(
+                                        ecoPeerFg(context), BlendMode.srcIn),
+                                    child: getPlatformImage(peer.platform,
+                                        size: 60)),
                               ),
                               Row(
                                 children: [
@@ -323,8 +332,9 @@ class _PeerCardState extends State<_PeerCard>
                                       waitDuration: const Duration(seconds: 1),
                                       child: Text(
                                         name,
-                                        style: const TextStyle(
-                                            color: Colors.white70,
+                                        style: TextStyle(
+                                            color: ecoPeerFg(context)
+                                                .withOpacity(0.8),
                                             fontSize: 12),
                                         textAlign: TextAlign.center,
                                         overflow: TextOverflow.ellipsis,
@@ -342,8 +352,8 @@ class _PeerCardState extends State<_PeerCard>
                                       waitDuration: const Duration(seconds: 1),
                                       child: Text(
                                         peer.note,
-                                        style: const TextStyle(
-                                            color: Colors.white38,
+                                        style: TextStyle(
+                                            color: ecoPeerFg(context).withOpacity(0.5),
                                             fontSize: 10),
                                         textAlign: TextAlign.center,
                                         overflow: TextOverflow.ellipsis,
@@ -397,7 +407,7 @@ class _PeerCardState extends State<_PeerCard>
           Positioned(
             top: 4,
             left: 12,
-            child: Icon(Icons.key, size: 12, color: Colors.white),
+            child: Icon(Icons.key, size: 12, color: ecoPeerFg(context)),
           ),
         if (colors.isNotEmpty)
           Positioned(

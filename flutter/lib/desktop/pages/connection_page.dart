@@ -357,7 +357,11 @@ class _ConnectionPageState extends State<ConnectionPage>
               const EcoIconDot(Icons.screen_share_rounded, size: 34),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(translate('Control Remote Desktop').toUpperCase(),
+                child: Text(
+                    (ecoBubbleWindow
+                            ? 'Prendre la main'
+                            : translate('Control Remote Desktop'))
+                        .toUpperCase(),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: ecoEyebrow(context)),

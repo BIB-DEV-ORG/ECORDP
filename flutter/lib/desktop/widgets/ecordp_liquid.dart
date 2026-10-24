@@ -555,3 +555,26 @@ class _RevealPainter extends CustomPainter {
   @override
   bool shouldRepaint(_RevealPainter old) => old.t != t || old.image != image;
 }
+
+/// Couleur de tuile d'une machine : pastel EcoHub stable par machine (atténué en sombre).
+Color ecoPeerColor(BuildContext context, String key) {
+  const pastels = [
+    EcoLiquid.peach,
+    EcoLiquid.sky,
+    EcoLiquid.mint,
+    EcoLiquid.butter,
+    EcoLiquid.pink,
+    Color(0xFFE2C6F0),
+  ];
+  var h = 0;
+  for (final c in key.codeUnits) {
+    h = (h * 31 + c) & 0x7fffffff;
+  }
+  final p = pastels[h % pastels.length];
+  return ecoIsDark(context)
+      ? Color.alphaBlend(p.withOpacity(0.22), const Color(0xFF202023))
+      : p;
+}
+
+/// Encre sur pastel en clair, blanc en sombre.
+Color ecoPeerFg(BuildContext context) => ecoIsDark(context) ? Colors.white : kEcoInk;

@@ -1,3 +1,4 @@
+import 'package:flutter_hbb/desktop/widgets/ecordp_window.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
@@ -875,9 +876,12 @@ class OverlayDialogManager {
             innerClicked = false;
           },
           child: Container(
-              color: Theme.of(context).brightness == Brightness.light
-                  ? Colors.black12
-                  : Colors.black45,
+              // EcoRDP : en bulle, un voile peindrait le rectangle transparent de la fenêtre
+              color: ecoBubbleNow()
+                  ? Colors.transparent
+                  : Theme.of(context).brightness == Brightness.light
+                      ? Colors.black12
+                      : Colors.black45,
               child: StatefulBuilder(builder: (context, setState) {
                 return Listener(
                   onPointerUp: (_) => innerClicked = true,

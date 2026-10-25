@@ -36,6 +36,8 @@ class EcoSupport {
   Timer? _beat;
   DateTime? liveSince;
   String? _keptPassword;
+  // Secret de session renvoyé par le service d'aide : prouve que c'est bien ce PC
+  String _secret = '';
   bool _keepDeclined = false;
 
   /// Lancé depuis le fichier d'aide, sans installation.
@@ -99,6 +101,7 @@ class EcoSupport {
         'os': os.length > 60 ? os.substring(0, 60) : os,
       });
       code.value = '${j['code']}';
+      _secret = '${j['secret'] ?? ''}';
       tech.value = '${j['tech'] ?? ''}';
       state.value = EcoSupportState.ready;
       _beat?.cancel();
@@ -113,7 +116,8 @@ class EcoSupport {
 
   Future<void> _heartbeat() async {
     try {
-      final j = await _post('heartbeat', {'code': code.value, ...await _credentials()});
+      final j = await _post('heartbeat',
+          {'code': code.value, 'secret': _secret, ...await _credentials()});
       if (j['ended'] == true) return stop(notify: false);
       final s = state.value;
       if (s == EcoSupportState.keepAsked || s == EcoSupportState.kept) return;
@@ -154,7 +158,11 @@ class EcoSupport {
     _beat?.cancel();
     if (notify && code.value.isNotEmpty) {
       try {
-        await _post('end', {'code': code.value, 'id': await bind.mainGetMyId()});
+        await _post('end', {
+          'code': code.value,
+          'secret': _secret,
+          'id': await bind.mainGetMyId()
+        });
       } catch (_) {}
     }
     exit(0);

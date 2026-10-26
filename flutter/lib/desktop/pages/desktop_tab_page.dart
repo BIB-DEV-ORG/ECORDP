@@ -92,24 +92,28 @@ class _DesktopTabPageState extends State<DesktopTabPage> {
 
   @override
   Widget build(BuildContext context) {
+    Widget scaffold(Color background) => Scaffold(
+        backgroundColor: background,
+        body: DesktopTab(
+          controller: tabController,
+          tail: Offstage(
+            offstage: bind.isIncomingOnly() || bind.isDisableSettings(),
+            child: ActionIcon(
+              message: 'Settings',
+              icon: IconFont.menu,
+              onTap: DesktopTabPage.onAddSetting,
+              isClose: false,
+            ),
+          ),
+        ));
+    // Bulle EcoRDP : pas de fond tant que seul l'accueil est ouvert. Hors bulle (macOS…),
+    // pas d'Obx : il ne lirait aucune valeur observée et GetX afficherait un écran gris.
     final tabWidget = Container(
-        child: Obx(() => Scaffold(
-            // Bulle EcoRDP : pas de fond tant que seul l'accueil est ouvert
-            backgroundColor: ecoBubbleNow()
+        child: ecoBubbleWindow
+            ? Obx(() => scaffold(ecoBubbleNow()
                 ? Colors.transparent
-                : Theme.of(context).colorScheme.background,
-            body: DesktopTab(
-              controller: tabController,
-              tail: Offstage(
-                offstage: bind.isIncomingOnly() || bind.isDisableSettings(),
-                child: ActionIcon(
-                  message: 'Settings',
-                  icon: IconFont.menu,
-                  onTap: DesktopTabPage.onAddSetting,
-                  isClose: false,
-                ),
-              ),
-            ))));
+                : Theme.of(context).colorScheme.background))
+            : scaffold(Theme.of(context).colorScheme.background));
     return isMacOS || kUseCompatibleUiMode
         ? tabWidget
         : Obx(

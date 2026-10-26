@@ -85,9 +85,11 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     return Stack(
       children: [
         Positioned.fill(
-            child: Obx(() => ecoBubbleNow()
-                ? const SizedBox.shrink()
-                : const EcoMeshBackground())),
+            child: ecoBubbleWindow
+                ? Obx(() => ecoBubbleNow()
+                    ? const SizedBox.shrink()
+                    : const EcoMeshBackground())
+                : const EcoMeshBackground()),
         LayoutBuilder(builder: (context, c) {
           final compact = c.maxWidth < 760;
           return Padding(

@@ -79,6 +79,8 @@ class EcoWindowControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Hors bulle, l'Obx ne lirait aucune valeur observée et GetX lèverait une erreur (écran gris)
+    if (!ecoBubbleWindow) return const SizedBox.shrink();
     return Obx(() {
       if (!ecoBubbleNow()) return const SizedBox.shrink();
       return Row(mainAxisSize: MainAxisSize.min, children: [

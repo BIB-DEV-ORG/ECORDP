@@ -641,7 +641,27 @@ jobs:
           CREATE_DMG="$(command -v create-dmg)"
           CREATE_DMG="$(readlink -f "$CREATE_DMG")"
           sed -i -e 's/MAXIMUM_UNMOUNTING_ATTEMPTS=3/MAXIMUM_UNMOUNTING_ATTEMPTS=7/' "$CREATE_DMG"
+          APP=./flutter/build/macos/Build/Products/Release/EcoRDP.app
+          codesign --force --deep --preserve-metadata=entitlements --sign - "$APP"
+          codesign --verify --deep --strict --verbose=2 "$APP"
           create-dmg --icon "EcoRDP.app" 200 190 --hide-extension "EcoRDP.app" --window-size 800 400 --app-drop-link 600 185 EcoRDP-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg ./flutter/build/macos/Build/Products/Release/EcoRDP.app
+
+      - name: Smoke test (lancement depuis le dmg)
+        if: env.UPLOAD_ARTIFACT == 'true'
+        continue-on-error: true
+        run: |
+          MNT=$(hdiutil attach -nobrowse EcoRDP-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg | tail -1 | cut -f3-)
+          codesign --verify --deep --strict --verbose=2 "$MNT/EcoRDP.app" || true
+          "$MNT/EcoRDP.app/Contents/MacOS/EcoRDP" > smoke.log 2>&1 &
+          PID=$!
+          sleep 25
+          ps -p $PID -o pid,stat,etime,command || echo "ARRETE (plantage ?)"
+          kill $PID 2>/dev/null || true
+          sleep 2
+          echo "===== sortie ====="; tail -n 200 smoke.log
+          echo "===== journaux ====="; find ~/Library/Logs -iname '*EcoRDP*' -o -iname '*rustdesk*' | while read -r d; do find "$d" -type f -newer smoke.log -o -type f -mmin -2 | head -5 | xargs -I{} sh -c 'echo "--- {}"; tail -n 80 "{}"'; done
+          echo "===== crash ====="; ls -t ~/Library/Logs/DiagnosticReports 2>/dev/null | head -3
+          hdiutil detach "$MNT" || true
 
       - name: Upload unsigned macOS app
         if: env.UPLOAD_ARTIFACT == 'true'

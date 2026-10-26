@@ -78,11 +78,24 @@ class EcoSupport {
     await windowManager.setMinimumSize(const Size(760, 520));
     await windowManager.setSize(const Size(860, 560));
     await windowManager.center();
-    await bind.mainSetOption(key: 'temporary-password-length', value: '10');
-    await bind.mainSetOption(
-        key: kOptionVerificationMethod, value: kUseTemporaryPassword);
-    // Le clic sur « Démarrer la session » vaut accord : pas de seconde validation.
-    await bind.mainSetOption(key: kOptionApproveMode, value: 'password');
+    if (!bind.mainIsInstalled()) {
+      await bind.mainSetOption(key: 'temporary-password-length', value: '10');
+      await bind.mainSetOption(
+          key: kOptionVerificationMethod, value: kUseTemporaryPassword);
+      // Le clic sur « Démarrer la session » vaut accord : pas de seconde validation.
+      await bind.mainSetOption(key: kOptionApproveMode, value: 'password');
+    } else {
+      // EcoRDP déjà installé (accès gardé…) : on n'enlève rien, on ajoute seulement
+      // le mot de passe temporaire et l'entrée par mot de passe s'ils manquent.
+      if (bind.mainGetOptionSync(key: kOptionVerificationMethod) ==
+          kUsePermanentPassword) {
+        await bind.mainSetOption(
+            key: kOptionVerificationMethod, value: kUseBothPasswords);
+      }
+      if (bind.mainGetOptionSync(key: kOptionApproveMode) == 'click') {
+        await bind.mainSetOption(key: kOptionApproveMode, value: '');
+      }
+    }
     await bind.mainUpdateTemporaryPassword();
     if (!lookedUp) await lookup('');
   }

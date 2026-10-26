@@ -102,6 +102,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
                     command_line_arguments.end(),
                     whitelist_param) != command_line_arguments.end();
     }
+    // EcoRDP Aide : rdp.eco-hub.exe ouvre son propre utilitaire, même si EcoRDP est déjà ouvert
+    wchar_t launched[MAX_PATH] = {0};
+    if (::GetEnvironmentVariableW(L"RUSTDESK_APPNAME", launched, MAX_PATH) > 0) {
+      std::wstring name(launched);
+      std::transform(name.begin(), name.end(), name.begin(), ::towlower);
+      allow_multiple_instances =
+          allow_multiple_instances || name.rfind(L"rdp.eco-hub", 0) == 0;
+    }
     if (!allow_multiple_instances) {
       if (!command_line_arguments.empty()) {
         // The process launched by the browser owns the foreground permission.

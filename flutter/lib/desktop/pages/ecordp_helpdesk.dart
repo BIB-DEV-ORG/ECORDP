@@ -74,6 +74,9 @@ class _Session {
   bool get keep => raw['keep'] == true;
   bool get ended => raw['ended'] == true;
   Map<String, dynamic>? get peer => raw['peer'] as Map<String, dynamic>?;
+  List<Map<String, dynamic>> get chat =>
+      (raw['chat'] as List? ?? []).cast<Map<String, dynamic>>();
+  int get peerMessages => chat.where((m) => m['from'] == 'peer').length;
 }
 
 class _EcoHelpdeskDialog extends StatefulWidget {
@@ -85,6 +88,10 @@ class _EcoHelpdeskDialog extends StatefulWidget {
 
 class _EcoHelpdeskDialogState extends State<_EcoHelpdeskDialog> {
   final _name = TextEditingController();
+  final _msg = TextEditingController();
+  // Discussion ouverte (code de session) et messages déjà lus par session
+  String? _chatCode;
+  final Map<String, int> _read = {};
   List<_Session> _sessions = [];
   String? _newCode;
   String _error = '';
@@ -105,6 +112,7 @@ class _EcoHelpdeskDialogState extends State<_EcoHelpdeskDialog> {
   void dispose() {
     _timer?.cancel();
     _name.dispose();
+    _msg.dispose();
     super.dispose();
   }
 
@@ -171,6 +179,97 @@ class _EcoHelpdeskDialogState extends State<_EcoHelpdeskDialog> {
     }
   }
 
+  Future<void> _sendChat(String code) async {
+    final t = _msg.text.trim();
+    if (t.isEmpty) return;
+    _msg.clear();
+    try {
+      await _call('sessions/chat', {'code': code, 'text': t});
+      await _refresh();
+    } catch (e) {
+      setState(() => _error = '$e');
+    }
+  }
+
+  Widget _chatPanel(EcoLiquid l, _Session s) {
+    _read[s.code] = s.peerMessages;
+    final who = s.name.isEmpty ? 'La personne' : s.name;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        border: Border.all(color: l.edge),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 180),
+          child: s.chat.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Text(
+                      s.peer == null
+                          ? 'La discussion s’ouvre quand la session démarre.'
+                          : 'Aucun message pour l’instant.',
+                      style: TextStyle(fontSize: 12.5, color: l.sub)),
+                )
+              : ListView(
+                  reverse: true,
+                  shrinkWrap: true,
+                  children: [
+                    for (final m in s.chat.reversed)
+                      Align(
+                        alignment: m['from'] == 'tech'
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(vertical: 3),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          constraints: const BoxConstraints(maxWidth: 360),
+                          decoration: BoxDecoration(
+                            color: m['from'] == 'tech' ? l.accent : l.fill,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: SelectableText(
+                              m['from'] == 'tech' ? '${m['text']}' : '$who : ${m['text']}',
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: m['from'] == 'tech' ? l.onAccent : l.text)),
+                        ),
+                      ),
+                  ],
+                ),
+        ),
+        if (s.peer != null) ...[
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(
+              child: TextField(
+                controller: _msg,
+                autofocus: true,
+                onSubmitted: (_) => _sendChat(s.code),
+                decoration: InputDecoration(
+                  hintText: 'Message…',
+                  isDense: true,
+                  filled: true,
+                  fillColor: l.fill,
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none),
+                ),
+              ),
+            ),
+            IconButton(
+              tooltip: 'Envoyer',
+              icon: Icon(Icons.send_rounded, color: l.accent),
+              onPressed: () => _sendChat(s.code),
+            ),
+          ]),
+        ],
+      ]),
+    );
+  }
+
   void _connect(_Session s) {
     final p = s.peer;
     if (p == null) return;
@@ -224,6 +323,17 @@ class _EcoHelpdeskDialogState extends State<_EcoHelpdeskDialog> {
           EcoGradientButton(
               label: translate('Connect'), height: 36, onPressed: () => _connect(s)),
         ],
+        Badge(
+          isLabelVisible: _chatCode != s.code && s.peerMessages > (_read[s.code] ?? 0),
+          label: Text('${s.peerMessages - (_read[s.code] ?? 0)}'),
+          child: IconButton(
+            tooltip: 'Discussion',
+            icon: Icon(Icons.chat_bubble_outline_rounded,
+                size: 18, color: _chatCode == s.code ? l.accent : l.sub),
+            onPressed: () =>
+                setState(() => _chatCode = _chatCode == s.code ? null : s.code),
+          ),
+        ),
         IconButton(
           tooltip: 'Terminer',
           icon: Icon(Icons.close_rounded, size: 18, color: l.sub),
@@ -348,7 +458,12 @@ class _EcoHelpdeskDialogState extends State<_EcoHelpdeskDialog> {
                       : ListView(
                           shrinkWrap: true,
                           padding: const EdgeInsets.only(right: 8),
-                          children: [for (final s in _sessions) _sessionTile(l, s)],
+                          children: [
+                            for (final s in _sessions) ...[
+                              _sessionTile(l, s),
+                              if (_chatCode == s.code) _chatPanel(l, s),
+                            ]
+                          ],
                         ),
                 ),
               ],

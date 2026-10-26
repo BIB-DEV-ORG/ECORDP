@@ -830,7 +830,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   @override
   void initState() {
     super.initState();
-    if (EcoSupport.candidate) EcoSupport.instance.start();
+    EcoSupport.autoStart();
     _updateTimer = periodic_immediate(const Duration(seconds: 1), () async {
       await gFFI.serverModel.fetchID();
       final error = await bind.mainGetError();

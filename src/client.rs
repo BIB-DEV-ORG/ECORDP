@@ -108,6 +108,8 @@ pub const MILLI1: Duration = Duration::from_millis(1);
 pub const SEC30: Duration = Duration::from_secs(30);
 // Empirical restart reconnect grace window.
 const RESTART_REMOTE_DEVICE_GRACE: Duration = Duration::from_secs(5 * 60);
+/// EcoRDP : délai de réponse du PC distant sur un chemin direct avant de passer par le relais.
+const DIRECT_HANDSHAKE_TIMEOUT: u64 = 4_000;
 pub const VIDEO_QUEUE_SIZE: usize = 120;
 const MAX_DECODE_FAIL_COUNTER: usize = 3;
 
@@ -1568,14 +1570,28 @@ impl Client {
             start.elapsed(),
             punch_type
         );
-        let res = Self::secure_connection(peer_id, signed_id_pk.clone(), key, &mut conn).await;
+        // EcoRDP : un trou percé dans la box peut s'ouvrir sans que le PC distant réponde jamais ;
+        // on n'attend pas 18 s sur un chemin direct, le relais prend le relais.
+        let res = if typ != "Relay" && !relay_server.is_empty() {
+            match timeout(
+                DIRECT_HANDSHAKE_TIMEOUT,
+                Self::secure_connection(peer_id, signed_id_pk.clone(), key, &mut conn),
+            )
+            .await
+            {
+                Ok(res) => res,
+                Err(_) => Err(anyhow!("no answer on the {} connection", typ)),
+            }
+        } else {
+            Self::secure_connection(peer_id, signed_id_pk.clone(), key, &mut conn).await
+        };
         let pk: Option<Vec<u8>> = match res {
             Ok(pk) => pk,
-            Err(e) if typ == "WebRTC" && !relay_server.is_empty() => {
+            Err(e) if typ != "Relay" && !relay_server.is_empty() => {
                 // WebRTC won the race but identity/DTLS binding failed; fall back to a freshly
                 // coordinated relay instead of failing the whole attempt. The guard is dropped
                 // first so the bad pc is closed promptly.
-                log::warn!("WebRTC secure handshake failed ({}), falling back to relay", e);
+                log::warn!("{} secure handshake failed ({}), falling back to relay", typ, e);
                 drop(webrtc_guard.take());
                 match Self::request_relay(
                     peer_id,
